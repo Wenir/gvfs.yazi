@@ -1845,7 +1845,8 @@ end
 local save_tab_hovered = ya.sync(function()
 	local hovered_item_per_tab = {}
 	for _, tab in ipairs(cx.tabs) do
-		local is_virtual = Url(tab.current.cwd).scheme and Url(tab.current.cwd).scheme.is_virtual
+		local is_virtual = (Url(tab.current.cwd).spec and Url(tab.current.cwd).spec.is_virtual)
+			or (Url(tab.current.cwd).scheme and Url(tab.current.cwd).scheme.is_virtual)
 		table.insert(hovered_item_per_tab, {
 			id = (type(tab.id) == "number" or type(tab.id) == "string") and tab.id or tab.id.value,
 			cwd = tostring((is_virtual and tab.current.cwd or tab.current.cwd.path) or tab.current.cwd),
@@ -1863,7 +1864,8 @@ local redirect_unmounted_tab_to_home = ya.sync(function(_, unmounted_url, notify
 		broadcast(PUBSUB_KIND.unmounted, hex_encode(unmounted_url))
 	end
 	for _, tab in ipairs(cx.tabs) do
-		local is_virtual = Url(tab.current.cwd).scheme and Url(tab.current.cwd).scheme.is_virtual
+		local is_virtual = (Url(tab.current.cwd).spec and Url(tab.current.cwd).spec.is_virtual)
+			or (Url(tab.current.cwd).scheme and Url(tab.current.cwd).scheme.is_virtual)
 		if ((is_virtual and tab.current.cwd or tab.current.cwd.path) or tab.current.cwd):starts_with(unmounted_url) then
 			ya.emit("cd", {
 				HOME,
@@ -2244,7 +2246,8 @@ end
 ---@param enabled boolean?
 local function toggle_automount_when_cd_action(enabled)
 	local hovered_path = get_hovered_path()
-	local is_virtual = Url(hovered_path).scheme and Url(hovered_path).scheme.is_virtual
+	local is_virtual = (Url(hovered_path).spec and Url(hovered_path).spec.is_virtual)
+		or (Url(hovered_path).scheme and Url(hovered_path).scheme.is_virtual)
 	if is_virtual then
 		return
 	end
