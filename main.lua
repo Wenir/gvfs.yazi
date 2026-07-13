@@ -1245,7 +1245,7 @@ local function is_mounted(device)
 end
 
 ---mount device
----@param opts {device: Device, username?:string, password?: string, service_domain?: string, is_pw_saved?: boolean, skipped_secret_vault?: boolean,max_retry?: integer, retries?: integer, anonymous?: boolean}
+---@param opts {device: Device, username?:string, password?: string, service_domain?: string, is_pw_saved?: boolean, skipped_secret_vault?: boolean,max_retry?: integer, retries?: integer, anonymous?: boolean, first_time_connect_confirmed?: boolean}
 ---@return boolean
 local function mount_device(opts)
 	local device = opts.device
@@ -1257,6 +1257,7 @@ local function mount_device(opts)
 	local username = opts.username
 	local anonymous = opts.anonymous
 	local service_domain = opts.service_domain
+	local first_time_connect_confirmed = opts.first_time_connect_confirmed
 	local error_msg = nil
 
 	local auths = ""
@@ -1274,6 +1275,10 @@ local function mount_device(opts)
 			auths = auths .. " " .. path_quote(password)
 			auth_string_format = auth_string_format .. "%s\n"
 		end
+	end
+	if first_time_connect_confirmed then
+		auths = auths .. " " .. path_quote("1")
+		auth_string_format = auth_string_format .. "%s\n"
 	end
 
 	local res, err = Command(SHELL)
@@ -1365,6 +1370,24 @@ local function mount_device(opts)
 					NOTIFY_MSG.MOUNT_ERROR_USERNAME,
 					(device.name or "NO_NAME") .. " (" .. (device.scheme or "UNKNOWN_SCHEME") .. ")"
 				)
+			end
+		end
+		if stdout:find("\nChoice: \n") then
+			if retries < max_retry then
+				local pos = get_state(STATE_KEY.INPUT_POSITION)
+				if pos.h == nil then
+					pos.h = 15
+				end
+				first_time_connect_confirmed = ya.confirm({
+					title = ui.Line("Log In Anyway"):style(th.confirm.title),
+					body = ui.Text(stdout):align(ui.Align.LEFT):wrap(ui.Wrap.YES),
+					-- TODO: remove this after next yazi released
+					content = ui.Text(stdout):align(ui.Align.LEFT):wrap(ui.Wrap.YES),
+					pos = pos,
+				})
+				if not first_time_connect_confirmed then
+					return false
+				end
 			end
 		end
 		if
@@ -1472,6 +1495,7 @@ local function mount_device(opts)
 		skipped_secret_vault = skipped_secret_vault,
 		username = username,
 		service_domain = service_domain,
+		first_time_connect_confirmed = first_time_connect_confirmed,
 		anonymous = anonymous,
 	})
 end
