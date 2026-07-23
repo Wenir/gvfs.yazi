@@ -64,6 +64,7 @@ polkit.addRule(function(action, subject) {
 - Reload the polkit rules with this command:
 
   ```bash
+  sudo groupadd plugdev
   # systemd:
   sudo systemctl restart polkit.service
 
