@@ -252,7 +252,10 @@ prepend_keymap = [
 It's highly recommended to add these lines to your `~/.config/yazi/yazi.toml`,  
 because GVFS is slow that can make yazi freeze when it preloads or previews a large number of files.  
 Especially when you use `Google-drive` or `One-drive`. Also please read this before adding these lines  
-to your `yazi.toml`: https://yazi-rs.github.io/docs/configuration/overview#mixing
+to your `yazi.toml`:
+
+- https://yazi-rs.github.io/docs/configuration/overview#mixing
+- https://yazi-rs.github.io/docs/configuration/yazi#plugin
 
 > [!NOTE]
 > If you already have `preloaders` and `previewers` in your `yazi.toml`,
