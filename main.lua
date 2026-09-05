@@ -1738,14 +1738,18 @@ local function get_device_from_local_path(path, state_key, devices)
 	return nil
 end
 
+--- Trigger Automount
+local function trigger_automount()
+	local automount_script = HOME .. "/.config/yazi/plugins/gvfs.yazi/assets/automount.sh"
+	run_command("chmod", { "+x", automount_script })
+	run_command(automount_script, {})
+end
+
 --- Jump to device mountpoint
 ---@param device Device?
 local function jump_to_device_mountpoint_action(device, retry, automount)
 	if automount then
-		-- Trigger Automount
-		local automount_script = HOME .. "/.config/yazi/plugins/gvfs.yazi/assets/automount.sh"
-		run_command("chmod", { "+x", automount_script })
-		run_command(automount_script, {})
+		trigger_automount()
 	end
 	if not device then
 		local list_devices = list_gvfs_device_by_status(DEVICE_CONNECT_STATUS.MOUNTED)
@@ -1883,6 +1887,34 @@ local function mount_action(opts)
 		jump_to_device_mountpoint_action(selected_device)
 	end
 	return success
+end
+
+--- Select a device from both mounted and unmounted devices,
+--- mount it first if it isn't mounted yet, then jump to its mountpoint
+---@param automount boolean? trigger automount before listing devices
+local function mount_if_needed_then_jump_action(automount)
+	if automount then
+		trigger_automount()
+	end
+	local list_devices = list_gvfs_device_by_status(DEVICE_CONNECT_STATUS.BOTH)
+	if #list_devices == 0 then
+		info(NOTIFY_MSG.LIST_DEVICES_EMPTY)
+		return
+	end
+	-- NOTE: Automatically select the first device if there is only one device
+	local selected_device = #list_devices == 1 and list_devices[1] or nil
+	if not selected_device then
+		local selected_device_idx = select_device_which_key(list_devices)
+		if not selected_device_idx then
+			return
+		end
+		selected_device = list_devices[selected_device_idx]
+	end
+	if is_mounted(selected_device) then
+		jump_to_device_mountpoint_action(selected_device)
+		return true
+	end
+	return mount_action({ jump = true, device = selected_device })
 end
 
 local save_tab_hovered = ya.sync(function()
@@ -2496,7 +2528,7 @@ function M:setup(opts)
 	end)
 end
 
----@param job {args: unknown[], args: {jump: boolean?, eject: boolean?, force: boolean?, automount: boolean?, disabled: boolean?}}
+---@param job {args: unknown[], args: {jump: boolean?, eject: boolean?, force: boolean?, automount: boolean?, mount: boolean?, disabled: boolean?}}
 function M:entry(job)
 	if not is_cmd_exist("gio") then
 		error(NOTIFY_MSG.CMD_NOT_FOUND, "gio")
@@ -2534,7 +2566,12 @@ function M:entry(job)
 		-- select a device then go to its mounted point
 	elseif action == ACTION.JUMP_TO_DEVICE then
 		local automount = job.args.automount or false
-		jump_to_device_mountpoint_action(nil, nil, automount)
+		if job.args.mount then
+			-- list both mounted and unmounted devices, mount the selected one if needed, then jump
+			mount_if_needed_then_jump_action(automount)
+		else
+			jump_to_device_mountpoint_action(nil, nil, automount)
+		end
 	elseif action == ACTION.JUMP_BACK_PREV_CWD then
 		jump_to_prev_cwd_action()
 	elseif action == ACTION.ADD_MOUNT then

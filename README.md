@@ -39,6 +39,7 @@ https://github.com/user-attachments/assets/fb74a710-5f05-4bf4-b95f-10f40583c5a0
 - Unmount and eject hardware devices (use `select-then-unmount --eject`)
 - Auto select the first device or saved scheme/mount URI if there is only one listed.
 - Jump to mounted location (use `jump-to-device`)
+- Select from both mounted and unmounted devices, mount it if needed, then jump to it (use `jump-to-device --mount`)
 - After jumped to mounted location, jump back to the previous location
   with a single keybind. Make it easier to copy/paste files. (use `jump-back-prev-cwd`)
 - Add/Edit/Remove scheme/mount URI (use `add-mount`, `edit-mount`, `remove-mount`). Check this for schemes/mount URI format: [schemes.html](<https://wiki.gnome.org/Projects(2f)gvfs(2f)schemes.html>)
@@ -236,6 +237,10 @@ prepend_keymap = [
     # then you can use `--automount` argument to auto mount device before jump.
     # Otherwise it won't show up in the jump list.
     { on = [ "g", "m" ], run = "plugin gvfs -- jump-to-device --automount", desc = "Automount then select device to jump to its mount point" },
+    # Use `--mount` to list both mounted and unmounted devices.
+    # If the selected device is already mounted, jump to it directly. Otherwise, mount it first then jump.
+    # Can be combined with `--automount`.
+    { on = [ "g", "m" ], run = "plugin gvfs -- jump-to-device --mount", desc = "Select device, mount it if needed, then jump to its mount point" },
     { on = [ "`", "`" ], run = "plugin gvfs -- jump-back-prev-cwd", desc = "Jump back to the position before jumped to device" },
 
     # Automount (This is different from `x-systemd.automount` in /etc/fstab)
